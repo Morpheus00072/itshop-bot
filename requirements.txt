@@ -1,0 +1,6 @@
+flask
+requests
+mysql-connector-python
+gunicorn
+apscheduler
+ 
