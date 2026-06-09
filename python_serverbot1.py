@@ -609,31 +609,52 @@ chat → {{"cmd":"chat"}}"""
 
 # ═══ EVOLUTION API ═══
 def _h():
-    return {"apikey": EVOLUTION_API_KEY, "Content-Type": "application/json"}
+    """Заголовки для Evolution API — только apikey, инстанс идёт в URL."""
+    return {
+        "apikey": EVOLUTION_API_KEY,
+        "Content-Type": "application/json",
+    }
 
 def send_message(to, text):
+    """Отправить текстовое сообщение через Evolution API."""
     number = to_api_number(to)
     try:
         r = requests.post(
             f"{EVOLUTION_URL}/message/sendText/{EVOLUTION_INSTANCE}",
-            headers=_h(), json={"number": number, "text": text}, timeout=12)
+            headers=_h(),
+            json={"number": number, "text": text},
+            timeout=12
+        )
         log.info(f"sendText [{r.status_code}] → {number}: {text[:55]}")
+        if r.status_code not in (200, 201):
+            log.error(f"sendText error body: {r.text[:200]}")
         return r.status_code in (200, 201)
     except Exception as e:
-        log.error(f"send_message: {e}"); return False
+        log.error(f"send_message: {e}")
+        return False
 
 def send_photo(to, url, caption=""):
+    """Отправить фото через Evolution API."""
     number = to_api_number(to)
     try:
         r = requests.post(
             f"{EVOLUTION_URL}/message/sendMedia/{EVOLUTION_INSTANCE}",
-            headers=_h(), json={"number": number, "mediatype": "image",
-                                "media": url, "caption": caption}, timeout=20)
+            headers=_h(),
+            json={
+                "number": number,
+                "mediatype": "image",
+                "media": url,
+                "caption": caption
+            },
+            timeout=20
+        )
         log.info(f"sendMedia [{r.status_code}] → {number}")
+        if r.status_code not in (200, 201):
+            log.error(f"sendMedia error body: {r.text[:200]}")
         return r.status_code in (200, 201)
     except Exception as e:
-        log.error(f"send_photo: {e}"); return False
-
+        log.error(f"send_photo: {e}")
+        return False
 # ═══ INTENT DETECTION ═══
 def is_photo_req(t):
     return bool(re.search(r"\b(фото|фотк|картинк|покажи|скинь|пикч|изображен)\b", t, re.I | re.U))
