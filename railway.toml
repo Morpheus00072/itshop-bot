@@ -1,9 +1,0 @@
-[build]
-builder = "NIXPACKS"
-
-[deploy]
-startCommand = "gunicorn python_serverbot1:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
-healthcheckPath = "/status"
-healthcheckTimeout = 30
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 3

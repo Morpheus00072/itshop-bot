@@ -3,4 +3,5 @@ requests
 mysql-connector-python
 gunicorn
 apscheduler
- 
+scikit-learn
+numpy
