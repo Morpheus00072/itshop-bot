@@ -48,15 +48,28 @@ def _call(
         "Content-Type":  "application/json",
     }
 
-    for attempt in range(2):
+    for attempt in range(3):
         try:
             r = requests.post(_GROQ_URL, headers=headers, json=payload, timeout=18)
+
+            # Retry 1: rate limit
             if r.status_code == 429 and attempt == 0:
                 log.warning("Groq 429 — retrying in 3s")
                 time.sleep(3)
                 continue
+
+            # Retry 2: json_validate_failed — модель не смогла выдать валидный JSON.
+            # Снимаем json-режим и пробуем бесплатным текстом, потом извлечём JSON регексом.
+            if r.status_code == 400 and as_json and attempt == 0:
+                err_code = r.json().get("error", {}).get("code", "")
+                if err_code == "json_validate_failed":
+                    log.warning("Groq json_validate_failed — retrying without JSON mode")
+                    payload.pop("response_format", None)  # снимаем json_object режим
+                    continue
+
             r.raise_for_status()
             return r.json()["choices"][0]["message"]["content"].strip()
+
         except requests.HTTPError as e:
             log.error(f"Groq HTTP {e.response.status_code}: {e.response.text[:200]}")
             break

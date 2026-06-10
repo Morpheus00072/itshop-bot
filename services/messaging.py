@@ -79,6 +79,9 @@ def send_photos_for_queries(chat_id: str, photo_queries: list[str]) -> None:
     first_photo = True
 
     for query in photo_queries[:3]:          # максимум 3 направления
+        query = str(query).strip()
+        if len(query) < 2:                   # пропускаем пустые / мусорные строки
+            continue
         photos = get_tour_photos(query, limit=2)
         for url, caption in photos:
             if url in sent_urls:

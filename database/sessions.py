@@ -3,7 +3,7 @@ WorldTravel v7.0 — Chat session & history queries.
 """
 import logging
 from database.connection import get_db
-from config import HISTORY_LIMIT, HISTORY_WINDOW
+from config import HISTORY_LIMIT
 import state
 
 log = logging.getLogger(__name__)
@@ -106,9 +106,8 @@ def save_message(chat_id: str, role: str, message: str) -> None:
 
 def get_history(chat_id: str) -> list[dict]:
     """
-    Возвращает историю для Groq с механизмом скользящего окна:
-    — Если в RAM есть саммари старых сообщений — добавляет его первым.
-    — Потом идут последние HISTORY_WINDOW полных сообщений.
+    Возвращает ВСЮ дедублицированную историю (до HISTORY_LIMIT*2 записей) из БД.
+    НЕ обрезает — скользящее окно и суммари применяются в prompts._get_windowed_history.
     """
     try:
         db = get_db(); cur = db.cursor()
@@ -132,19 +131,7 @@ def get_history(chat_id: str) -> list[dict]:
         else:
             cleaned.append({"role": role, "content": content})
 
-    if len(cleaned) <= HISTORY_WINDOW:
-        return cleaned
-
-    # Скользящее окно: recent + summary prefix
-    recent = cleaned[-HISTORY_WINDOW:]
-    summary = state.history_summaries.get(chat_id)
-    if summary:
-        return [
-            {"role": "user",      "content": f"[Краткое содержание предыдущего диалога]: {summary}"},
-            {"role": "assistant", "content": "Хорошо, продолжаем."},
-            *recent
-        ]
-    return recent
+    return cleaned
 
 
 def get_chat_history_for_boss() -> str:
